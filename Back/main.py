@@ -1,10 +1,18 @@
-from flask import Flask
+from flask import Flask,jsonify
 
 app = Flask(__name__)
 
+user = {
+    'user':{
+        'id':1,
+        'name': 'leonardo',
+        'lastName':'Couñago Arballo',
+    }
+}
+
 @app.route('/')
 def index():
-    return "<h1> hola mundo <h1>"
+    return jsonify(user)
 
 if __name__ == "__main__":
     app.run(debug=True)
