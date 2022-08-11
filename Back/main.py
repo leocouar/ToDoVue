@@ -1,49 +1,11 @@
 from flask import Flask, Response, request, jsonify
-from flask_sqlalchemy import SQLAlchemy
-import datetime
+from models import db,User,Task
+from logging import exception
+from werkzeug.security import generate_password_hash, check_password_hash
 
 app = Flask(__name__)
 app.config.from_object('config.MainConfig')
-db = SQLAlchemy(app)
-
-class User(db.Model):
-    __tablename__ = "User"
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(20), unique=True, nullable=False)
-    firstname = db.Column(db.String(20))
-    lastname = db.Column(db.String(20))
-    password = db.Column(db.String(255), nullable=False)
-    nacdate = db.Column(db.DateTime)
-    deleted = db.Column(db.Boolean)
-    tasks = db.relationship('Task', backref='User', lazy=True)
-
-    def __init__(self, username, firstname, lastname, password, nacdate, deleted):
-        self.username = username
-        self.password = password
-        self.firstname = firstname
-        self.lastname = lastname
-        self.nacdate = nacdate
-        self.deleted = deleted
-
-class Task(db.Model):
-    _tablename_="Task"
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(50))
-    description = db.Column(db.Text)
-    date = db.Column(db.DateTime)
-    user_id = db.Column(db.Integer, db.ForeignKey('User.id'),primary_key=True, nullable=False)
-
-    def __init__(self,user_id,title,description,date):
-        self.user_id = user_id
-        self.title = title
-        self.description = description
-        self.date = date
-
-
-
-
-
-db.create_all()
+db.init_app(app)
 
 @app.route('/')
 def index():
@@ -60,14 +22,41 @@ def ping():
 
 @app.route("/users", methods=['GET'])
 def getUsers():
-    return "hola"
+    try:
+        userList = User.query.all()
+        toReturn = [User.serialize() for user in userList]
+        return jsonify(toReturn), 200
+    except:
+        exception("[SERVER]: Error al retornar lista de usuarios.")
+        return jsonify({"msg":"Error al retornar usuarios"})
+
+@app.route("/user/<id>", methods=['GET'])
+def getUser(id):
+    user= User.query.filter_by(id=id)
+    
+    if not user:
+        return jsonify({"msg":"este usuario no existe"})
+    else:
+        return jsonify(user)
 
 @app.route('/user', methods=['POST'])
 def createUser():
-    username = request.json['username']
-    firstname = request.json['firstname']
-    lastname = request.json['lastname']
-    password = request.json['password']
+    if request.method == 'POST':
+        username = request.json['username']
+        firstname = request.json['firstname']
+        lastname = request.json['lastname']
+        password = request.json['password']
+
+        user_name = User.query.filter_by(username=username).first()
+        
+        if user_name == None:
+            user = User(username=username, password=generate_password_hash(password)) #Crear usuario
+            db.session.add(user)
+            db.session.commit()
+
+@app.route("/user/<id>", methods=['PUT'])
+def updateUser(id):
+    pass
 
     
 
