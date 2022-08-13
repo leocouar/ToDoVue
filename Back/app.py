@@ -106,13 +106,10 @@ def updateUser(id):
         usuario.firstname = str(request.json['firstname'])
         usuario.lastname = str(request.json['lastname'])
         usuario.password = generate_password_hash(request.json['password'])
-    
-            
-    
+        db.session.commit()
+        return jsonify({"msg":"ok"})
+
 
 #TASK
-
-    
-
 if __name__ == "__main__":
     app.run(debug=True)
