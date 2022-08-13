@@ -1,3 +1,4 @@
+from datetime import datetime
 from flask import Flask, Response, request, jsonify
 from models import db,User,Task
 from logging import exception
@@ -6,6 +7,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 app = Flask(__name__)
 app.config.from_object('config.MainConfig')
 db.init_app(app)
+db.create_all
 
 @app.route('/')
 def index():
@@ -24,8 +26,8 @@ def ping():
 def getUsers():
     try:
         userList = User.query.all()
-        toReturn = [User.serialize() for user in userList]
-        return jsonify(toReturn), 200
+        toReturn = [user.serialize() for user in userList]
+        return jsonify(toReturn)
     except:
         exception("[SERVER]: Error al retornar lista de usuarios.")
         return jsonify({"msg":"Error al retornar usuarios"})
@@ -41,18 +43,28 @@ def getUser(id):
 
 @app.route('/user', methods=['POST'])
 def createUser():
-    if request.method == 'POST':
-        username = request.json['username']
-        firstname = request.json['firstname']
-        lastname = request.json['lastname']
-        password = request.json['password']
+    try:
+        if request.method == 'POST':
+            username = request.json['username']
+            firstname = request.json['firstname']
+            lastname = request.json['lastname']
+            password = request.json['password']
+            dia = int(request.json['dia'])
+            mes = int(request.json['mes'])
+            year = int(request.json['year'])
+            date = datetime(year,mes,dia)
 
-        user_name = User.query.filter_by(username=username).first()
+            user_name = User.query.filter_by(username=username).first()
+            
+            if user_name == None:
+                user = User(username=username, password=password , firstname=firstname, lastname=lastname, deleted=False, nacdate=date) #Crear usuario
+                db.session.add(user)
+                db.session.commit()
+            return jsonify({"msg":"ok"})
+    except:
+        exception("[SERVER]: Error al crear usuario")
+        return jsonify({"msg":"Error al crear usuario"})
         
-        if user_name == None:
-            user = User(username=username, password=generate_password_hash(password)) #Crear usuario
-            db.session.add(user)
-            db.session.commit()
 
 @app.route("/user/<id>", methods=['PUT'])
 def updateUser(id):
