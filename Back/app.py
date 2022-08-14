@@ -1,7 +1,7 @@
 from turtle import title
 from flask import Flask, request , jsonify
 from flask_sqlalchemy import SQLAlchemy
-from werkzeug.security import generate_password_hash
+from werkzeug.security import generate_password_hash,check_password_hash
 from datetime import datetime
 
 
@@ -70,6 +70,21 @@ class Task(db.Model):
 db.create_all()
 
 #USUARIOS
+#LOGIN
+@app.route('/login', methods=['POST','GET'])
+def login():
+    try:
+        if request.method == 'POST':
+            username = request.json['username']
+            passwordIngresado = request.json['password']
+            user = User.query.filter_by(username=username).first()
+            if check_password_hash(user.password,passwordIngresado):
+                user = user.serialize()
+                return jsonify(user)
+            else:
+                return jsonify({"msg": "El usuario o la contaseña son invalidos"})
+    except:
+        return jsonify({"msg": "error"})
 #POST
 @app.route('/user', methods=['POST'])
 def saveUser():
@@ -119,10 +134,10 @@ def getUser(id):
         return jsonify({"msg":"error al buscar el usuario"})
 
 #UPDATE USER
-@app.route('/user/<id>', methods=['POST','GET'])
+@app.route('/user/<id>', methods=['PUT'])
 def updateUser(id):
     try:
-        if request.method == 'POST':
+        if request.method == 'PUT':
             usuario = User.query.get(id)
             usuario.username = str(request.json['username'])
             usuario.email = str(request.json['email'])
